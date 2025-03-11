@@ -1,0 +1,8 @@
+{
+    "username": "your_username",
+    "password": "your_password",
+    "urls": [
+        "wss://192.168.168.1/ws", // Your AMS on network. Variations on "wss://vms_1.vms.delaval.com/ws" might also work
+        "wss://192.168.168.2/ws" // Second machine, add more lines if necessary
+    ]
+}
