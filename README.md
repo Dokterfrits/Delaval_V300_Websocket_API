@@ -10,8 +10,9 @@ This project automates authentication and WebSocket communication with multiple 
 
 1. **Clone the repository:**
    ```sh
-   git clone https://github.com/Dokterfrits/Delaval_Web_Authentication_API
-   cd websocket-automation
+   git clone https://github.com/Dokterfrits/Delaval_V300_Websocket_API
+   cd Delaval_V300_Websocket_API
+
    ```
 2. **Create a virtual environment (optional but recommended):**
    ```sh
@@ -22,10 +23,9 @@ This project automates authentication and WebSocket communication with multiple 
    ```sh
    pip install -r requirements.txt
    ```
+4. **Configuration:**
 
-## Configuration
-
-Rename **config_template.json** to **config.json** and update the credentials and urls in the project directory:
+   Rename **config_template.json** to **config.json** and update the credentials and urls:
    ```json
    {
        "username": "your_username",
@@ -36,14 +36,36 @@ Rename **config_template.json** to **config.json** and update the credentials an
        ]
    }
    ```
-
+5. **Run Server:**
+   ```sh
+   python run_server.py
+   ```
+   
 ## Usage
 
-Run the script:
+The Flask server exposes a URL endpoint that accepts mode change requests with machine and mode indices.
+**Example URL:**
 
-```sh
-python main.py
-```
+    localhost:5000/mode/10
+
+
+Where:
+- `1`: The machine index (machine 1 in this case).
+- `0`: The mode index (0 refers to the first mode, e.g., "auto").
+
+### Mode Options
+
+The available modes are:
+1. `"auto"`
+2. `"manual"`
+3. `"activatedelayedrel"`
+4. `"activatemanualclosedstall"`
+
+### Example Request
+
+To change the mode of machine 2 to "manual", you would call:
+
+    localhost:5000/mode/21
 
 ## Features
 

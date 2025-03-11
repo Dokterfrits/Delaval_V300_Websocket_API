@@ -4,6 +4,7 @@ import json
 import time
 import ssl
 import threading
+import os
 
 # URLs
 SALT_URL = "https://amssc.vms.delaval.com:8445/get_salt"
@@ -12,7 +13,10 @@ UUID_URL = "wss://amssc.vms.delaval.com:8443/ws"
 
 MODES = ["auto", "manual", "activatedelayedrel", "activatemanualclosedstall"]
 
-with open("config.json", "r") as f:
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Get the current script's directory
+CONFIG_PATH = os.path.join(BASE_DIR, "../config.json")  # Adjust the path to find config.json
+
+with open(CONFIG_PATH, "r") as f:
     config = json.load(f)
 
 # User credentials
@@ -198,6 +202,7 @@ def create_ws_connection(machine_index):
 
 def connect_all_machines():
     """Start WebSocket connections for all machines."""
+    print("Connecting to WebSockets...")
     for index in range(len(WS_URLS)):
         ws_thread = threading.Thread(target=create_ws_connection, args=(index,))
         ws_thread.start()
@@ -207,7 +212,5 @@ def connect_all_machines():
 if login(USERNAME, PASSWORD):
     # Start connections
     connect_all_machines()
-    time.sleep(5)
-    send_mode_change(3,1)
 else:
     print("Login failed. WebSocket will not start.")
