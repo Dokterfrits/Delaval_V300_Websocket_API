@@ -1,4 +1,4 @@
-# Delaval v300 AMS automatic webui authentication and 433MHz remote control
+# Delaval V300 AMS automatic webui authentication and 433MHz remote control
 
 ## Overview
 
