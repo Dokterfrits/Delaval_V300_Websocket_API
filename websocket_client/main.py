@@ -162,6 +162,16 @@ def on_open(ws, machine_index):
     websocket_connections[machine_index] = ws
 
 
+def send_idle_poll():
+    """Continuously sends IdlePoll messages to all connected machines every 30 seconds."""
+    while True:
+        time.sleep(30)
+        for machine_index, ws in websocket_connections.items():
+            idle_poll_message = {"messType": "IdlePoll"}
+            ws.send(json.dumps(idle_poll_message))
+            print(f"Sent IdlePoll to machine {machine_index}")
+
+
 def send_mode_change(machine_index, mode_index):
     """Send a mode change message to a specific machine with selected mode."""
     if machine_index in websocket_connections and 0 <= mode_index < len(MODES):
@@ -175,7 +185,8 @@ def send_mode_change(machine_index, mode_index):
 
         # Send the complete message to the selected WebSocket machine
         ws.send(json.dumps(mode_message))
-        print(f"Sent mode '{MODES[mode_index]}' to machine {machine_index}: \n {mode_message}")
+        print(f"Sent mode '{MODES[mode_index]}' to machine {machine_index}: ")
+        # print(f"{mode_message}")
     else:
         print(f"Invalid machine index or mode index.")
 
@@ -212,5 +223,8 @@ def connect_all_machines():
 if login(USERNAME, PASSWORD):
     # Start connections
     connect_all_machines()
+    # Start sending idle poll messages
+    idle_poll_thread = threading.Thread(target=send_idle_poll, daemon=True)
+    idle_poll_thread.start()
 else:
     print("Login failed. WebSocket will not start.")
