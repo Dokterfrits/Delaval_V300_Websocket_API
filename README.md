@@ -1,4 +1,4 @@
-# Delaval v300 AMS automatic webui authentication
+# Delaval v300 AMS automatic webui authentication and remote control
 
 ## Overview
 
