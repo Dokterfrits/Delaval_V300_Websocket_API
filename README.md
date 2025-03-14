@@ -71,6 +71,7 @@ To change the mode of machine 2 to "manual", you would call:
 
 - Secure authentication with hashed credentials
 - WebSocket connection to multiple machines
+- 433MHz remote control implementation using esp8266 and generic receiver module
 - Sends control messages dynamically to a selected machine
 - Logs responses and identifies which machine sent them
 
