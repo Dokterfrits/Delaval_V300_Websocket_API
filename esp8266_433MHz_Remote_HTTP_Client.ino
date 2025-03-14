@@ -84,10 +84,11 @@ void loop() {
             lastReceivedValue = receivedValue;
         }
 
+//--------UNCOMMENT THIS SECTION TO FIGURE OUT YOUR REMOTE SPECIFIC CODES--------------------------
 //        Serial.print("Received: ");
 //        Serial.print(receivedValue);
 //        Serial.print(" | Repetitions: ");
-//        Serial.println(repetitionCount);
+//-------------------------------------------------------------------------------------------------
 
         lastReceivedTime = currentTime;
         decisionPrinted = false;
