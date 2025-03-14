@@ -1,10 +1,10 @@
-# Delaval v300 AMS automatic webui authentication
+# Delaval V300 AMS automatic webui authentication and 433MHz remote control
 
 ## Overview
 
-A python program to authenticate at the webui of the Delaval v300 automatic milking station AMS and establish a websocket connection to interact with the machine.
+A python program to authenticate at the webui of the Delaval v300 automatic milking station AMS and establish a websocket connection to interact with the machine. It automates authentication and WebSocket communication with multiple AMS machines. It logs in using hashed credentials, establishes WebSocket connections, and can send control messages to specific machines.
 
-This project automates authentication and WebSocket communication with multiple AMS machines. It logs in using hashed credentials, establishes WebSocket connections, and can send control messages to specific machines.
+Example code for a 433MHz remote control for the Delaval Milking Robot was added for an esp8266 with a generic 433MHz receiver, requesting server urls.
 
 ## Installation
 
@@ -71,6 +71,7 @@ To change the mode of machine 2 to "manual", you would call:
 
 - Secure authentication with hashed credentials
 - WebSocket connection to multiple machines
+- 433MHz remote control implementation using esp8266 and generic receiver module
 - Sends control messages dynamically to a selected machine
 - Logs responses and identifies which machine sent them
 
