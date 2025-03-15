@@ -5,6 +5,7 @@ import time
 import ssl
 import threading
 import os
+from datetime import datetime
 
 # URLs
 SALT_URL = "https://amssc.vms.delaval.com:8445/get_salt"
@@ -29,8 +30,8 @@ WS_URLS.insert(0, UUID_URL)
 SESSION_USER = {}
 AUTH_TOKEN = ""
 
-# Store active WebSocket connections
-websocket_connections = {}
+websocket_connections = {}  # Store active WebSocket connections
+connection_start_times = {}  # Store start times for each WebSocket
 
 
 def get_salt(username):
@@ -123,10 +124,10 @@ def on_message(ws, message, machine_index):
 
         if str(data).startswith("{'isOk': True, 'user': {'uuid':") and not SESSION_USER:
             SESSION_USER = generate_rc_session_user(data)
-            print(f"[Machine {machine_index}] Updated SESSION_USER:", SESSION_USER)
+            print(f"{datetime.now().strftime('%m-%d %H:%M:%S')} [Machine {machine_index}] :  Updated SESSION_USER:", SESSION_USER)
 
         elif not str(data).startswith("{'ms': {'stall': {'orientation': "):
-            print(f"[Machine {machine_index}] Received message :", data)
+            print(f"{datetime.now().strftime('%m-%d %H:%M:%S')} [Machine {machine_index}] :", data)
 
     except json.JSONDecodeError:
         print(f"[Machine {machine_index}] Failed to decode message:", message)
@@ -137,9 +138,16 @@ def on_error(ws, error):
     print("WebSocket error:", error)
 
 
-def on_close(ws, close_status_code, close_msg):
+def on_close(ws, machine_index, close_status_code, close_msg):
     """Handles WebSocket closure."""
+    print(datetime.now().strftime('%m-%d %H:%M:%S'))
     print("WebSocket closed")
+    runtime = time.time() - connection_start_times.get(machine_index, time.time())
+    print(f"WebSocket {machine_index} closed after {runtime:.2f} seconds. Attempting reconnect...")
+    websocket_connections.pop(machine_index, None)
+    time.sleep(5)  # Wait before retrying
+    print(f"Reconnecting WebSocket {machine_index}...")
+    create_ws_connection(machine_index)# Re-establish connection
 
 
 def on_open(ws, machine_index):
@@ -160,6 +168,7 @@ def on_open(ws, machine_index):
 
     # Store WebSocket connection
     websocket_connections[machine_index] = ws
+    connection_start_times[machine_index] = time.time()
 
 
 def send_idle_poll():
