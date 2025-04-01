@@ -66,6 +66,10 @@ The available modes are:
 To change the mode of machine 2 to "manual", you would call:
 
     localhost:5000/mode/21
+    
+To request the mode of all machines, you would call:
+
+    localhost:5000/state
 
 ## Features
 
