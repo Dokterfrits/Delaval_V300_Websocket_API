@@ -32,6 +32,7 @@ AUTH_TOKEN = ""
 
 websocket_connections = {}  # Store active WebSocket connections
 connection_start_times = {}  # Store start times for each WebSocket
+machine_states = {}  # Store latest state per machine
 
 
 def get_salt(username):
@@ -126,8 +127,18 @@ def on_message(ws, message, machine_index):
             SESSION_USER = generate_rc_session_user(data)
             print(f"{datetime.now().strftime('%m-%d %H:%M:%S')} [Machine {machine_index}] :  Updated SESSION_USER:", SESSION_USER)
 
-        elif not str(data).startswith("{'ms': {'stall': {'orientation': "):
+        elif not str(data).startswith("{'ms': {'stall': {'orientation': ") and data.get("messType") != "IdlePoll":
             print(f"{datetime.now().strftime('%m-%d %H:%M:%S')} [Machine {machine_index}] :", data)
+
+        # Extract and store the mode if present
+        if "ms" in data:
+            main_mode = data["ms"].get("mainMode")  # Extract mainMode
+            closed_stall = data["ms"].get("stall", {}).get("manualClosedStall")  # Check stall state
+
+            if closed_stall == "active":
+                machine_states[machine_index] = "activatemanualclosedstall"
+            elif main_mode:
+                machine_states[machine_index] = main_mode
 
     except json.JSONDecodeError:
         print(f"[Machine {machine_index}] Failed to decode message:", message)
@@ -178,7 +189,6 @@ def send_idle_poll():
         for machine_index, ws in websocket_connections.items():
             idle_poll_message = {"messType": "IdlePoll"}
             ws.send(json.dumps(idle_poll_message))
-            print(f"Sent IdlePoll to machine {machine_index}")
 
 
 def send_mode_change(machine_index, mode_index):

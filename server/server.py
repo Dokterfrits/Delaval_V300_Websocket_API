@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from websocket_client.main import connect_all_machines, send_mode_change, MODES, websocket_connections
+from websocket_client.main import connect_all_machines, send_mode_change, MODES, websocket_connections, machine_states
 import json
 import threading
 import time
@@ -31,6 +31,12 @@ def set_mode(code):
         return f"Changed machine {machine_index} to {MODES[mode_index]} mode", 200
     else:
         return "Invalid machine or mode index", 400  # If out of range or not found
+
+
+@app.route('/state', methods=['GET'])
+def get_machine_state():
+    """Returns the latest known state of the machines."""
+    return jsonify(machine_states)
 
 
 
