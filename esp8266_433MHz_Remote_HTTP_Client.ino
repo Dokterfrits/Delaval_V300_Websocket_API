@@ -1,7 +1,8 @@
 //-------------------------------------------------------------------------------------------------------------------
 // This code runs on an esp8266, like the Wemos d1 mini.
 // A 433mhz generic receiver module is connected to pin D2
-// A number of WS2812 RGB LEDs is connected by pin D3
+// A number of WS2812 RGB LEDs is connected by pin D3.
+// One led for each AMS you want to control
 //-------------------------------------------------------------------------------------------------------------------
 #include <RCSwitch.h>
 #include <ESP8266WiFi.h>
