@@ -42,7 +42,6 @@ Example code for a 433MHz remote control for the Delaval Milking Robot was added
    ```
    
 ## Usage
-
 The Flask server exposes a URL endpoint that accepts mode change requests with machine and mode indices.
 **Example URL:**
 
@@ -70,6 +69,11 @@ To change the mode of machine 2 to "manual", you would call:
 To request the mode of all machines, you would call:
 
     localhost:5000/state
+    
+These requests can be made by an esp8266 like the Wemos D1 Mini. Example code is available to trigger these requests using a 433Mhz remote.
+
+![Screenshot](./images/ReadMeRemoteControl.png)
+
 
 ## Features
 

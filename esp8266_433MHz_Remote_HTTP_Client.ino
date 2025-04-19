@@ -165,11 +165,11 @@ void setup() {
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-// Update the codes that your 433mhz remote sends here.
+// Update the codes that your 433mhz remote sends, here.
 // You can discover these codes by running the "433mhz test" script on the esp8266
 // and monitoring the serial output in the arduino IDE. The codes are printed there.
 // Also mark the time between two consecutive codes that are repeatedly send by your remote when doing a long press
-// the variable RepeatInterval at the beginning of this script might be updated to match your remote, but its unlikely.
+// the variable "RepeatInterval" at the beginning of this script might be updated to match your remote, but its unlikely.
 // For now, identical codes received within 250ms are interpreted as a long press, when received more then 6 times.
 //-------------------------------------------------------------------------------------------------------------------
 
