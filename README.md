@@ -57,6 +57,7 @@ Where:
 ### Mode Options
 
 The available modes are:
+
 0. `"auto"`
 1. `"manual"`
 2. `"activatedelayedrel"`
