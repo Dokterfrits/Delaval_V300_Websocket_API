@@ -57,10 +57,11 @@ Where:
 ### Mode Options
 
 The available modes are:
-1. `"auto"`
-2. `"manual"`
-3. `"activatedelayedrel"`
-4. `"activatemanualclosedstall"`
+
+0. `"auto"`
+1. `"manual"`
+2. `"activatedelayedrel"`
+3. `"activatemanualclosedstall"`
 
 ### Example Request
 
