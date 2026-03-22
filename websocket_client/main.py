@@ -6,13 +6,7 @@ import ssl
 import threading
 import os
 from datetime import datetime
-
-# URLs
-SALT_URL = "https://amssc.vms.delaval.com:8445/get_salt"
-LOGIN_URL = "https://amssc.vms.delaval.com:8445/login"
-UUID_URL = "wss://amssc.vms.delaval.com:8443/ws"
-
-MODES = ["auto", "manual", "activatedelayedrel", "activatemanualclosedstall"]
+from websocket_client.data_analysis import extract_data
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Get the current script's directory
 CONFIG_PATH = os.path.join(BASE_DIR, "../config.json")  # Adjust the path to find config.json
@@ -20,10 +14,12 @@ CONFIG_PATH = os.path.join(BASE_DIR, "../config.json")  # Adjust the path to fin
 with open(CONFIG_PATH, "r") as f:
     config = json.load(f)
 
-# User credentials
 USERNAME = config["username"]
 PASSWORD = config["password"]
 WS_URLS = config["urls"]
+SALT_URL = config["SALT_URL"]
+LOGIN_URL = config["LOGIN_URL"]
+UUID_URL = config["UUID_URL"]
 WS_URLS.insert(0, UUID_URL)
 
 # User session data (to be filled after login)
@@ -32,7 +28,6 @@ AUTH_TOKEN = ""
 
 websocket_connections = {}  # Store active WebSocket connections
 connection_start_times = {}  # Store start times for each WebSocket
-machine_states = {}  # Store latest state per machine
 
 
 def get_salt(username):
@@ -95,10 +90,10 @@ def login(username, password):
         print("Login successful!")
         AUTH_TOKEN = response.text.strip()  # Extract token directly from the raw response text
         print("Token extracted:", AUTH_TOKEN)
-        return True
+        return response.text.strip()  # return token
     else:
         print("Login failed:", response.text)
-        return False
+        return None
 
 
 def generate_rc_session_user(auth_response):
@@ -122,7 +117,7 @@ def on_message(ws, message, machine_index):
     global SESSION_USER
     try:
         data = json.loads(message)
-
+        # prints anything thats not normal traffic
         if str(data).startswith("{'isOk': True, 'user': {'uuid':") and not SESSION_USER:
             SESSION_USER = generate_rc_session_user(data)
             print(f"{datetime.now().strftime('%m-%d %H:%M:%S')} [Machine {machine_index}] :  Updated SESSION_USER:", SESSION_USER)
@@ -130,15 +125,8 @@ def on_message(ws, message, machine_index):
         elif not str(data).startswith("{'ms': {'stall': {'orientation': ") and data.get("messType") != "IdlePoll":
             print(f"{datetime.now().strftime('%m-%d %H:%M:%S')} [Machine {machine_index}] :", data)
 
-        # Extract and store the mode if present
-        if "ms" in data:
-            main_mode = data["ms"].get("mainMode")  # Extract mainMode
-            closed_stall = data["ms"].get("stall", {}).get("manualClosedStall")  # Check stall state
+        extract_data(data, machine_index)
 
-            if closed_stall == "active":
-                machine_states[machine_index] = "activatemanualclosedstall"
-            elif main_mode:
-                machine_states[machine_index] = main_mode
 
     except json.JSONDecodeError:
         print(f"[Machine {machine_index}] Failed to decode message:", message)
@@ -161,14 +149,14 @@ def on_close(ws, machine_index, close_status_code, close_msg):
     create_ws_connection(machine_index)# Re-establish connection
 
 
-def on_open(ws, machine_index):
+def on_open(ws, machine_index, token):
     """Sends authentication messages when WebSocket is opened."""
     print(f"WebSocket {machine_index} connected. Sending authentication messages...")
 
     messages = [
         {"messType": "WebMuuiSubscribeMsModelReq"},
-        {"messType": "AuthorizeReq", "token": AUTH_TOKEN, "isPromise": True, "rcSessionUser": SESSION_USER},
-        {"messType": "AuthorizeReq", "token": AUTH_TOKEN, "isPromise": False, "rcSessionUser": SESSION_USER},
+        {"messType": "AuthorizeReq", "token": token, "isPromise": True, "rcSessionUser": SESSION_USER},
+        {"messType": "AuthorizeReq", "token": token, "isPromise": False, "rcSessionUser": SESSION_USER},
         {"messType": "WebMuuiMsModelReq"},
     ]
 
@@ -177,9 +165,6 @@ def on_open(ws, machine_index):
         ws.send(json.dumps(msg))
         # print(f"\n Sent to Machine {machine_index}:", msg)
 
-    # Store WebSocket connection
-    websocket_connections[machine_index] = ws
-    connection_start_times[machine_index] = time.time()
 
 
 def send_idle_poll():
@@ -191,59 +176,90 @@ def send_idle_poll():
             ws.send(json.dumps(idle_poll_message))
 
 
-def send_mode_change(machine_index, mode_index):
-    """Send a mode change message to a specific machine with selected mode."""
-    if machine_index in websocket_connections and 0 <= mode_index < len(MODES):
-        ws = websocket_connections[machine_index]  # Get correct WebSocket
-        session_user = SESSION_USER.copy()
-        mode_message = {
-            "messType": "WebMuuiModeReq",
-            "rcSessionUser": session_user,
-            "mode": MODES[mode_index]
-        }
-
-        # Send the complete message to the selected WebSocket machine
-        ws.send(json.dumps(mode_message))
-        print(f"Sent mode '{MODES[mode_index]}' to machine {machine_index}: ")
-        # print(f"{mode_message}")
-    else:
-        print(f"Invalid machine index or mode index.")
 
 
-def create_ws_connection(machine_index):
-    """Create WebSocket connection for a specific machine."""
-    ws_url = WS_URLS[machine_index]
-
-    ws = websocket.WebSocketApp(
-        ws_url,
-        header=[
-            "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
-            "Origin: https://vms.delaval.com",
-            "Sec-WebSocket-Version: 13",
-        ],
-        on_error=on_error,
-        on_close=on_close,
-        on_open=lambda ws: on_open(ws, machine_index),
-        on_message=lambda ws, msg: on_message(ws, msg, machine_index)
-    )
-
-    ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
+#
+# def create_ws_connection(machine_index):
+#     """Create WebSocket connection for a specific machine."""
+#     ws_url = WS_URLS[machine_index]
+#
+#     ws = websocket.WebSocketApp(
+#         ws_url,
+#         header=[
+#             "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
+#             "Origin: https://vms.delaval.com",
+#             "Sec-WebSocket-Version: 13",
+#         ],
+#         on_error=on_error,
+#         on_close=on_close,
+#         on_open=lambda ws: on_open(ws, machine_index),
+#         on_message=lambda ws, msg: on_message(ws, msg, machine_index)
+#     )
+#
+#     ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
 
 
 def connect_all_machines():
-    """Start WebSocket connections for all machines."""
-    print("Connecting to WebSockets...")
+    print("Starting machine workers...")
     for index in range(len(WS_URLS)):
-        ws_thread = threading.Thread(target=create_ws_connection, args=(index,))
-        ws_thread.start()
+        t = threading.Thread(target=machine_worker, args=(index,), daemon=True)
+        t.start()
 
+
+def machine_worker(machine_index):
+    """Runs a persistent connection loop for a single machine."""
+    global SESSION_USER
+
+    while True:
+        try:
+            print(f"[Machine {machine_index}] Starting new session...")
+
+            # Get fresh auth token
+            token = login(USERNAME, PASSWORD)
+            if not token:
+                print(f"[Machine {machine_index}] Login failed. Retrying in 10s...")
+                time.sleep(10)
+                continue
+
+            SESSION_USER = {}  # reset for fresh session
+
+            ws_url = WS_URLS[machine_index]
+
+            ws = websocket.WebSocketApp(
+                ws_url,
+                header=[
+                    "User-Agent: Mozilla/5.0",
+                    "Origin: https://vms.delaval.com",
+                ],
+                on_open=lambda ws: on_open(ws, machine_index, token),
+                on_message=lambda ws, msg: on_message(ws, msg, machine_index),
+                on_error=lambda ws, err: on_error(ws, err),
+                on_close=lambda ws, code, msg: print(
+                    f"{datetime.now().strftime('%m-%d %H:%M:%S')} [Machine {machine_index}] Closed"
+                ),
+            )
+
+            websocket_connections[machine_index] = ws
+            connection_start_times[machine_index] = time.time()
+
+            # Run connection (blocks until it breaks)
+            ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
+
+        except Exception as e:
+            print(f"[Machine {machine_index}] Crash: {e}")
+
+        # Cleanup after disconnect/crash
+        websocket_connections.pop(machine_index, None)
+
+        print(f"[Machine {machine_index}] Reconnecting in 5s...\n")
+        time.sleep(5)
 
 # **RUN EVERYTHING**
-if login(USERNAME, PASSWORD):
-    # Start connections
-    connect_all_machines()
-    # Start sending idle poll messages
-    idle_poll_thread = threading.Thread(target=send_idle_poll, daemon=True)
-    idle_poll_thread.start()
-else:
-    print("Login failed. WebSocket will not start.")
+print("Starting system...")
+
+# Start machine workers (they handle login internally)
+connect_all_machines()
+
+# Start idle poll thread
+idle_poll_thread = threading.Thread(target=send_idle_poll, daemon=True)
+idle_poll_thread.start()
